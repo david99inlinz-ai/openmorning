@@ -36,6 +36,9 @@ class OpenMorning:
         # 加载数据
         self.predictions = self._load_predictions()
         self.cases = self._load_cases()
+        
+        # 加载历史权重
+        self._load_agent_weights()
     
     def predict(self, question: str, context: Dict[str, Any] = None) -> Dict[str, Any]:
         """
@@ -313,16 +316,34 @@ class OpenMorning:
         return lessons
     
     def _update_agent_weights(self, verification: Dict):
-        """更新 Agent 权重"""
-        # 简化实现：根据验证结果调整
-        if verification.get("correct_direction"):
-            # 增加权重
-            for agent in self.agents.values():
-                agent.weight = min(0.5, agent.weight + 0.01)
-        else:
-            # 减少权重
-            for agent in self.agents.values():
-                agent.weight = max(0.1, agent.weight - 0.01)
+        """更新 Agent 权重（精细化调整）"""
+        actual_direction = verification.get("direction", "neutral")
+        
+        # 从最近的预测记录中获取各 Agent 的信号
+        latest_pred = self.predictions["predictions"][-1]
+        analysis = latest_pred.get("analysis", {})
+        
+        # 逐个评估 Agent 的准确性
+        for agent_name, agent in self.agents.items():
+            agent_result = analysis.get(agent_name, {})
+            agent_signal = agent_result.get("signal", "neutral")
+            
+            # 判断该 Agent 是否预测正确
+            if agent_signal == actual_direction:
+                # 预测对了 → 增加权重
+                agent.weight = min(0.5, agent.weight + 0.02)
+                print(f"✅ {agent_name} 预测正确，权重 {agent.weight-0.02:.2f} → {agent.weight:.2f}")
+            elif agent_signal != "neutral" and actual_direction != "neutral":
+                # 预测错了（且不是中性）→ 减少权重
+                agent.weight = max(0.05, agent.weight - 0.02)
+                print(f"❌ {agent_name} 预测错误，权重 {agent.weight+0.02:.2f} → {agent.weight:.2f}")
+            else:
+                # 中性或方向不明确 → 小幅调整
+                agent.weight = max(0.05, min(0.5, agent.weight - 0.005))
+                print(f"⚖️ {agent_name} 中性，权重微调 → {agent.weight:.2f}")
+        
+        # 保存权重到文件
+        self._save_agent_weights()
     
     def _add_to_cases(self, record: Dict, actual_result: str, lessons: Dict):
         """添加到历史案例库"""
@@ -412,6 +433,29 @@ class OpenMorning:
         """自动设置验证日期"""
         year = context.get("year", datetime.now().year)
         return f"{year}-12-31"
+    
+    def _save_agent_weights(self):
+        """保存 Agent 权重到文件"""
+        weights_file = os.path.join(self.data_dir, "agent_weights.json")
+        weights = {
+            name: {
+                "weight": agent.weight,
+                "updated_at": datetime.now().isoformat()
+            }
+            for name, agent in self.agents.items()
+        }
+        with open(weights_file, "w", encoding="utf-8") as f:
+            json.dump(weights, f, ensure_ascii=False, indent=2)
+    
+    def _load_agent_weights(self):
+        """加载 Agent 权重"""
+        weights_file = os.path.join(self.data_dir, "agent_weights.json")
+        if os.path.exists(weights_file):
+            with open(weights_file, "r", encoding="utf-8") as f:
+                weights = json.load(f)
+                for name, data in weights.items():
+                    if name in self.agents:
+                        self.agents[name].weight = data["weight"]
     
     def _load_predictions(self) -> Dict:
         """加载预测记录"""
