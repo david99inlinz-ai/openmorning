@@ -1,26 +1,5 @@
-# Python
+openmorning
+*.pyc
 __pycache__/
-*.py[cod]
-*$py.class
-*.so
-.Python
-env/
-venv/
-*.egg-info/
-
-# Data files (keep templates, ignore actual data)
-data/predictions.json
-data/cases.json
-
-# IDE
-.vscode/
-.idea/
-*.swp
-*.swo
-
-# OS
-.DS_Store
-Thumbs.db
-
-# Logs
-*.log
+data/*.json
+.env
