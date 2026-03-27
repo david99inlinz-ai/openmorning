@@ -1,9 +1,187 @@
-# 🌅 OpenMorning - 开源预测引擎
+# 🌅 OpenMorning - Open Source Prediction Engine
 
-**让预测不再是瞎猜，而是有据可依、持续进化的科学。**
+**Making predictions scientific, not guesswork.**
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Python 3.9+](https://img.shields.io/badge/python-3.9+-blue.svg)](https://www.python.org/downloads/)
+
+---
+
+## Core Philosophy
+
+> History often rhymes. Predictions need verification. Verification brings learning.
+
+OpenMorning is an open-source prediction engine combining:
+- **Economic Cycles** (Kondratieff/Juglar/Kitchin)
+- **Real-time News**
+- **Market Sentiment**
+- **Metaphysics Analysis** (optional)
+
+Continuously learning through user verification feedback.
+
+---
+
+## Quick Start
+
+### Use in OpenClaw
+
+```
+/openmorning Will A-shares rise in 2026?
+/openmorning Can Bitcoin reach $150K in 2026?
+/openmorning AI industry trends in 2026
+```
+
+### Verify Predictions
+
+```
+/openmorning verify pred_20260327_001 result: up 12%
+```
+
+---
+
+## Key Features
+
+### 1. Full Analysis (No Filtering)
+
+All agents analyze in parallel, never miss any possibility.
+
+### 2. Multi-Scenario Predictions
+
+Generate bullish/neutral/bearish scenarios with probabilities.
+
+### 3. Historical Case Matching
+
+Automatically match similar historical cases for reference.
+
+### 4. Verification Feedback Loop
+
+```
+Predict → Record → Wait → Verify → Learn → Evolve
+```
+
+### 5. Continuous Learning
+
+Update agent weights after each verification. Gets smarter with use.
+
+---
+
+## Architecture
+
+```
+User Request
+    ↓
+【Analysis Layer】Full Analysis
+    ├─ EconomicCycleAgent
+    ├─ SentimentAgent
+    └─ MetaphysicsAgent
+    ↓
+【Prediction Layer】Multi-Scenario Generation
+    ├─ Bullish Scenario
+    ├─ Neutral Scenario
+    └─ Bearish Scenario
+    ↓
+【Record Layer】Save Prediction
+    data/predictions.json
+    ↓
+【Verification Layer】User Feedback
+    └─ Analyze why right/wrong
+    ↓
+【Learning Layer】Update Weights
+    cases.json + Agent weight adjustment
+```
+
+---
+
+## Cycle Theory Reference
+
+### Kondratieff Cycle (50-60 years)
+
+| Phase | Characteristics | Current Status |
+|-------|----------------|----------------|
+| Prosperity | Tech revolution | - |
+| Recession | Growth slowdown | - |
+| Depression | Economic downturn | 2015-2025 |
+| Recovery | New cycle start | **2026-** |
+
+### Juglar Cycle (7-11 years)
+
+Equipment investment cycle, affects medium-term economic trends.
+
+### Kitchin Cycle (3-4 years)
+
+Inventory cycle, affects short-term market volatility.
+
+---
+
+## Data Collection Notice
+
+This is an open-source project. User prediction questions and verification results are collected for model optimization.
+
+**Data Collected**:
+- Prediction questions
+- Analysis process
+- Prediction results
+- Verification results
+- Lessons learned
+
+**Not Collected**: Personal privacy information
+
+Data used for:
+- Improving prediction accuracy
+- Building historical case library
+- Academic research
+
+---
+
+## Disclaimer
+
+1. For research and entertainment purposes only
+2. Predictions do not constitute investment advice
+3. Past performance does not indicate future results
+4. Investment involves risk, decisions should be cautious
+
+---
+
+## Contributing
+
+Contributions welcome:
+- New analysis agents
+- Historical case data
+- Prediction logic improvements
+- Verification analysis methods
+
+### Development Setup
+
+```bash
+git clone https://github.com/david99inlinz-ai/openmorning.git
+cd openmorning
+pip install -r requirements.txt
+```
+
+### Testing
+
+```bash
+python openmorning.py
+```
+
+---
+
+## License
+
+MIT License - See [LICENSE](LICENSE)
+
+---
+
+## Contact
+
+- GitHub: https://github.com/david99inlinz-ai/openmorning
+- Issues: https://github.com/david99inlinz-ai/openmorning/issues
+
+---
+
+# 🌅 OpenMorning - 开源预测引擎
+
+**让预测成为科学，不再是瞎猜。**
 
 ---
 
@@ -28,195 +206,31 @@ OpenMorning 是一个开源的预测引擎，结合：
 ```
 /openmorning 2026 年 A 股会涨吗？
 /openmorning 比特币 2026 年能到 15 万美元吗？
-/openmorning 2026 年 AI 行业发展趋势
 ```
 
 ### 验证预测
 
 ```
-/openmorning verify pred_20260327_001
-结果：上涨 12%
+/openmorning verify pred_20260327_001 结果：上涨 12%
 ```
 
 ---
 
 ## 核心特性
 
-### 1. 全量分析（不筛选）
-
-所有 Agent 并行分析，不漏掉任何可能：
-- EconomicCycleAgent - 康波/朱格拉/基钦周期
-- SentimentAgent - 市场情绪分析
-- MetaphysicsAgent - 玄学分析（可选）
-
-### 2. 多方案预测
-
-生成乐观/中性/悲观三个方案，每个方案有概率和关键因素。
-
-### 3. 历史案例匹配
-
-自动匹配相似历史案例，参考历史结果。
-
-### 4. 验证反馈闭环
-
-```
-预测 → 记录 → 等待 → 验证 → 学习 → 进化
-```
-
-### 5. 持续学习
-
-每次验证后更新 Agent 权重，越用越准。
-
----
-
-## 架构设计
-
-```
-用户请求
-    ↓
-【分析层】全量分析（不筛选）
-    ├─ EconomicCycleAgent
-    ├─ SentimentAgent
-    └─ MetaphysicsAgent
-    ↓
-【预测层】多方案生成
-    ├─ 方案 A（乐观）
-    ├─ 方案 B（中性）
-    └─ 方案 C（悲观）
-    ↓
-【记录层】保存预测
-    data/predictions.json
-    ↓
-【验证层】用户反馈验证
-    └─ 分析为什么对/错
-    ↓
-【学习层】更新权重
-    data/cases.json + Agent 权重调整
-```
-
----
-
-## 输出示例
-
-```json
-{
-  "prediction_id": "pred_20260327_001",
-  "question": "2026 年 A 股会涨吗？",
-  "analysis": {
-    "economic_cycle": {
-      "kondratieff": {"phase": "回升期", "signal": "bullish"},
-      "juglar": {"phase": "扩张期", "signal": "bullish"},
-      "rate_cycle": {"phase": "降息", "signal": "bullish"}
-    },
-    "sentiment": {"fear_index": 30, "signal": "reversal_possible"},
-    "metaphysics": {"period": "九紫离火运", "signal": "bullish"}
-  },
-  "predictions": [
-    {"scenario": "乐观", "result": "上涨 50-70%", "probability": 0.5},
-    {"scenario": "中性", "result": "上涨 20-40%", "probability": 0.3},
-    {"scenario": "悲观", "result": "下跌 10-20%", "probability": 0.2}
-  ],
-  "similar_cases": [
-    {"year": 1982, "context": "康波回升期", "result": "上涨 45%"},
-    {"year": 2019, "context": "降息周期", "result": "上涨 25%"}
-  ]
-}
-```
-
----
-
-## 数据收集声明
-
-本 Skill 为开源项目，会收集用户的预测问题和验证结果用于模型优化。
-
-**收集的数据**：
-- 预测问题
-- 分析过程
-- 预测结果
-- 验证结果
-- 经验教训
-
-**不会收集**：个人隐私信息
-
-数据将用于：
-- 改进预测准确率
-- 建立历史案例库
-- 学术研究
-
----
-
-## 贡献指南
-
-欢迎贡献：
-1. 新的分析 Agent
-2. 历史案例数据
-3. 预测逻辑优化
-4. 验证分析方法
-
-### 开发环境
-
-```bash
-git clone https://github.com/openclaw/openmorning.git
-cd openmorning
-pip install -r requirements.txt
-```
-
-### 测试
-
-```bash
-python openmorning.py
-```
-
----
-
-## 周期理论参考
-
-### 康波周期（50-60 年）
-
-| 阶段 | 特征 | 当前状态 |
-|------|------|---------|
-| 繁荣期 | 技术革命爆发 | - |
-| 衰退期 | 增长放缓 | - |
-| 萧条期 | 经济低迷 | 2015-2025 |
-| 回升期 | 新周期起点 | **2026-** |
-
-### 朱格拉周期（7-11 年）
-
-设备投资周期，影响中期经济走势。
-
-### 基钦周期（3-4 年）
-
-库存周期，影响短期市场波动。
-
----
-
-## 玄学分析（可选）
-
-基于易经、五行等传统文化进行分析。
-
-**注意**：玄学分析仅供参考，不构成决策依据。
+- 全量分析，不漏掉任何可能
+- 多方案预测，概率 + 关键因素
+- 历史案例匹配
+- 验证反馈闭环
+- 持续学习进化
 
 ---
 
 ## 免责声明
 
-1. 本 Skill 仅供研究和娱乐用途
-2. 预测结果不构成投资建议
-3. 历史表现不代表未来结果
-4. 投资有风险，决策需谨慎
-
----
-
-## 许可证
-
-MIT License - 详见 [LICENSE](LICENSE)
-
----
-
-## 联系方式
-
-- GitHub: https://github.com/openclaw/openmorning
-- 问题反馈：https://github.com/openclaw/openmorning/issues
+1. 仅供研究和娱乐用途
+2. 预测不构成投资建议
+3. 投资有风险，决策需谨慎
 
 ---
 

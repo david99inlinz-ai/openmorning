@@ -12,6 +12,7 @@ from typing import Dict, Any, List
 from agents.economic_cycle import EconomicCycleAgent
 from agents.sentiment import SentimentAgent
 from agents.metaphysics import MetaphysicsAgent
+from report_generator import generate_report
 
 class OpenMorning:
     """OpenMorning 预测引擎"""
@@ -86,7 +87,10 @@ class OpenMorning:
         # 保存预测
         self._save_prediction(record)
         
-        return record
+        # 生成专业投资报告（中英双语）
+        cn_report, en_report = generate_report(record)
+        
+        return {"report_cn": cn_report, "report_en": en_report, "prediction_id": prediction_id, "raw_data": record}
     
     def verify(self, prediction_id: str, actual_result: str) -> Dict[str, Any]:
         """

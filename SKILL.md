@@ -1,216 +1,115 @@
 ---
 name: openmorning
 description: |
-  OpenMorning - 开源预测引擎
-  
-  结合经济学周期（康波/朱格拉/基钦）、实时新闻、市场情绪、玄学分析，
-  生成多方案预测，并通过用户验证反馈持续学习进化。
-  
-  快捷键：/openmorning
-  GitHub: https://github.com/openclaw/openmorning
+  OpenMorning - Open Source Prediction Engine. Combining economic cycles, market sentiment, and optional metaphysics analysis for continuous learning predictions. Shortcut: /openmorning
+---
+
+# 🌅 OpenMorning - Open Source Prediction Engine
+
+**Making predictions scientific, not guesswork.**
+
+---
+
+## Quick Start
+
+```
+/openmorning Will A-shares rise in 2026?
+/openmorning Can Bitcoin reach $150K in 2026?
+/openmorning verify pred_xxx result: up 12%
+```
+
+---
+
+## Core Architecture
+
+```
+User Request
+    ↓
+【Analysis】EconomicCycle + Sentiment + Metaphysics Agents
+    ↓
+【Prediction】Multi-scenario generation (Bullish/Neutral/Bearish)
+    ↓
+【Record】Save to predictions.json
+    ↓
+【Verify】User feedback → Learning
+    ↓
+【Evolve】Update agent weights
+```
+
+---
+
+## Supported Prediction Types
+
+| Type | Example |
+|------|---------|
+| **Stocks** | "Will A-shares rise in 2026?" |
+| **Crypto** | "Can Bitcoin reach $150K?" |
+| **Economy** | "Global economy trends 2026" |
+| **Industry** | "AI industry development trends" |
+| **Politics** | "Will Trump be re-elected?" |
+
+---
+
+## Cycle Theory
+
+### Kondratieff Cycle (50-60 years)
+
+Current Status: **Recovery Phase (2026-)**
+
+| Phase | Time | Characteristics |
+|-------|------|-----------------|
+| Prosperity | 1991-2000 | Tech revolution |
+| Recession | 2000-2008 | Bubble burst |
+| Depression | 2008-2025 | Zero-sum game |
+| **Recovery** | **2026-** | **New cycle start** |
+
+### Juglar Cycle (7-11 years)
+
+Equipment investment cycle.
+
+### Kitchin Cycle (3-4 years)
+
+Inventory cycle.
+
+---
+
+## Data Collection
+
+User predictions and verification results are collected for model optimization. No personal data.
+
+---
+
+## Disclaimer
+
+For research and entertainment only. Not investment advice.
+
 ---
 
 # 🌅 OpenMorning - 开源预测引擎
 
-**核心理念**：历史总是惊人的相似，预测需要验证，验证带来学习。
+**让预测成为科学，不再是瞎猜。**
 
 ---
 
 ## 快速使用
 
 ```
-/openmorning 2026年A股会涨吗？
-/openmorning 比特币2026年能到15万美元吗？
-/openmorning 2026年AI行业发展趋势
+/openmorning 2026 年 A 股会涨吗？
+/openmorning 比特币能到 15 万美元吗？
 ```
-
----
 
 ## 核心架构
 
-```
-用户请求
-    ↓
-【分析层】全量分析（不筛选）
-    ├─ EconomicCycleAgent（康波/朱格拉/基钦周期）
-    ├─ SentimentAgent（市场情绪）
-    ├─ TechnicalAgent（技术分析）
-    ├─ NewsAgent（实时新闻）
-    └─ MetaphysicsAgent（玄学分析，可选）
-    ↓
-【预测层】多方案生成
-    ├─ 方案A（乐观）
-    ├─ 方案B（中性）
-    └─ 方案C（悲观）
-    ↓
-【记录层】保存预测
-    data/predictions.json
-    ↓
-【验证层】用户反馈验证
-    ├─ 用户报告实际结果
-    ├─ 分析每个因素的对错
-    └─ 记录原因分析
-    ↓
-【学习层】更新权重
-    cases.json + Agent 权重调整
-```
+用户请求 → 多 Agent 分析 → 多方案预测 → 记录 → 验证反馈 → 学习进化
 
----
+## 支持类型
 
-## 预测类型支持
-
-| 类型 | 示例问题 |
-|------|---------|
-| **股市** | "2026年A股会涨吗？" |
-| **加密货币** | "比特币2026年能到15万吗？" |
-| **经济趋势** | "2026年全球经济走势" |
-| **行业发展** | "AI行业2026年发展趋势" |
-| **个人运势** | "2026年我的事业运如何？"（需生辰八字） |
-
----
-
-## 输出格式
-
-```json
-{
-  "prediction_id": "pred_20260327_001",
-  "question": "2026年A股会涨吗？",
-  "analysis": {
-    "kondratieff_cycle": {"phase": "回升期", "signal": "bullish", "confidence": 0.8},
-    "juglar_cycle": {"phase": "扩张期", "signal": "bullish", "confidence": 0.7},
-    "rate_cycle": {"phase": "降息", "signal": "bullish", "confidence": 0.75},
-    "sentiment": {"fear_index": 30, "signal": "reversal_possible", "confidence": 0.6},
-    "news": {"trend": "利好主导", "confidence": 0.65}
-  },
-  "predictions": [
-    {"scenario": "乐观", "result": "上涨50-70%", "probability": 0.5, "key_factors": ["康波回升期", "降息周期"]},
-    {"scenario": "中性", "result": "上涨20-40%", "probability": 0.3, "key_factors": ["震荡上行"]},
-    {"scenario": "悲观", "result": "下跌10-20%", "probability": 0.2, "key_factors": ["黑天鹅事件"]}
-  ],
-  "similar_cases": [
-    {"year": 1982, "context": "康波回升期+降息", "result": "上涨45%"},
-    {"year": 2019, "context": "降息周期", "result": "上涨25%"}
-  ],
-  "verify_date": "2026-12-31",
-  "disclaimer": "本预测仅供参考，不构成投资建议"
-}
-```
-
----
-
-## 验证反馈流程
-
-### 用户触发验证
-
-```
-/openmorning verify pred_20260327_001
-结果：上涨12%
-```
-
-### 系统自动分析
-
-```
-【验证报告】
-预测ID：pred_20260327_001
-问题：2026年A股会涨吗？
-预测：上涨50-70%（乐观）、上涨20-40%（中性）、下跌10-20%（悲观）
-实际：上涨12%
-
-【分析】
-✓ 方向正确：预测上涨，实际上涨
-⚠ 幅度偏差：预测50-70%，实际12%
-
-【因素复盘】
-✓ 康波周期：判断正确（回升期）
-✓ 降息周期：判断正确
-⚠ 情绪指数：恐慌后反转，但反转幅度低于预期
-✗ 幅度预测：高估了上涨幅度
-
-【经验教训】
-1. 康波回升期 + 降息周期 = 确认上涨方向
-2. 恐慌指数低点不等于高涨幅
-3. 需要增加"上涨幅度"的独立预测因子
-
-【权重更新】
-- 康波周期权重：0.3 → 0.32
-- 降息周期权重：0.25 → 0.27
-- 情绪指数权重：0.2 → 0.18
-```
-
----
-
-## 数据收集声明
-
-**本 Skill 为开源项目，会收集用户的预测问题和验证结果用于模型优化。**
-
-收集的数据包括：
-- 预测问题
-- 分析过程
-- 预测结果
-- 验证结果
-- 原因分析
-
-**不会收集个人隐私信息。**
-
-数据将用于：
-- 改进预测准确率
-- 建立历史案例库
-- 学术研究
-
-GitHub 仓库：https://github.com/openclaw/openmorning
-
----
-
-## 周期理论参考
-
-### 康波周期（50-60年）
-
-| 阶段 | 特征 | 当前状态 |
-|------|------|---------|
-| 繁荣期 | 技术革命爆发 | - |
-| 衰退期 | 增长放缓 | - |
-| 萧条期 | 经济低迷 | 2015-2025 |
-| 回升期 | 新周期起点 | **2026-** |
-
-### 朱格拉周期（7-11年）
-
-设备投资周期，影响中期经济走势。
-
-### 基钦周期（3-4年）
-
-库存周期，影响短期市场波动。
-
----
-
-## 玄学分析（可选）
-
-| 方法 | 用途 | 需要信息 |
-|------|------|---------|
-| 易经 | 卦象推演 | 问题 |
-| 紫微斗数 | 运势分析 | 生辰八字 |
-| 奇门遁甲 | 时局判断 | 时间 + 方位 |
-
----
+股票 | 加密货币 | 经济趋势 | 行业发展 | 政治
 
 ## 免责声明
 
-1. 本 Skill 仅供研究和娱乐用途
-2. 预测结果不构成投资建议
-3. 历史表现不代表未来结果
-4. 投资有风险，决策需谨慎
+仅供研究和娱乐，不构成投资建议。
 
 ---
 
-## 贡献指南
-
-欢迎贡献：
-- 新的分析 Agent
-- 历史案例数据
-- 预测逻辑优化
-- 验证分析方法
-
-GitHub: https://github.com/openclaw/openmorning
-
----
-
-**让预测不再是瞎猜，而是有据可依、持续进化的科学。** 🌅
+**🌅 让预测成为科学**
