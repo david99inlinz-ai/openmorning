@@ -90,27 +90,32 @@ class MetaphysicsAgent:
         }
     
     def _analyze_iching(self, context: Dict[str, Any]) -> Dict[str, Any]:
-        """易经卦象分析（简化版）"""
-        question = context.get("question", "")
+        """易经卦象分析（时间起卦法）"""
+        # 用当前时间起卦，避免循环论证
+        now = datetime.now()
+        upper = (now.year + now.month + now.day) % 8
+        lower = (now.year + now.month + now.day + now.hour) % 8
         
-        # 简化：根据问题关键词判断卦象
-        if "涨" in question or "涨" in question:
-            hexagram = "泰卦"
+        # 八卦映射（简化）
+        trigrams = ["坤", "艮", "坎", "巽", "震", "离", "兑", "乾"]
+        hexagram_name = f"{trigrams[upper]}{trigrams[lower]}"
+        
+        # 根据卦象判断（简化规则）
+        if upper in [7, 4, 5]:  # 乾震离为阳
             signal = "bullish"
-            description = "天地交泰，万物亨通"
-        elif "跌" in question or "跌" in question:
-            hexagram = "否卦"
+            description = "阳卦主升"
+        elif upper in [0, 2]:  # 坤坎为阴
             signal = "bearish"
-            description = "天地不交，万物不通"
+            description = "阴卦主降"
         else:
-            hexagram = "谦卦"
             signal = "neutral"
-            description = "谦受益，满招损"
+            description = "中性卦象"
         
         return {
-            "hexagram": hexagram,
+            "hexagram": hexagram_name,
             "signal": signal,
-            "description": description
+            "description": description,
+            "method": "时间起卦"
         }
     
     def _combine_metaphysics(self, wuxing: Dict, iching: Dict) -> Dict[str, Any]:

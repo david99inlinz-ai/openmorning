@@ -34,7 +34,7 @@ class EconomicCycleAgent:
         juglar = self._analyze_juglar(year)
         
         # 基钦周期分析（3-4年）
-        kitchin = self._analyze_kitchin(year)
+        kitchin = self._analyze_kitchin(year, context)
         
         # 货币周期分析
         rate_cycle = self._analyze_rate_cycle(context)
@@ -113,23 +113,33 @@ class EconomicCycleAgent:
             "period": "7-11年"
         }
     
-    def _analyze_kitchin(self, year: int) -> Dict[str, Any]:
+    def _analyze_kitchin(self, year: int, context: Dict[str, Any]) -> Dict[str, Any]:
         """基钦周期分析（库存周期）"""
-        # 约 40 个月
-        cycle_month = ((year - 2000) * 12) % 40
+        # 优先使用 PMI 数据判断
+        pmi = context.get("pmi")
+        pmi_signal = context.get("pmi_signal")
         
-        if cycle_month < 20:
-            phase = "补库存"
-            signal = "bullish"
+        if pmi and pmi_signal:
+            phase = "补库存" if pmi_signal == "扩张" else "去库存"
+            signal = "bullish" if pmi > 50 else "bearish"
+            data_source = f"PMI {pmi}"
         else:
-            phase = "去库存"
-            signal = "bearish"
+            # 降级到简化计算
+            cycle_month = ((year - 2000) * 12) % 40
+            if cycle_month < 20:
+                phase = "补库存"
+                signal = "bullish"
+            else:
+                phase = "去库存"
+                signal = "bearish"
+            data_source = "周期估算"
             
         return {
             "cycle": "基钦周期",
             "phase": phase,
             "signal": signal,
-            "period": "3-4年"
+            "period": "3-4年",
+            "data_source": data_source
         }
     
     def _analyze_rate_cycle(self, context: Dict[str, Any]) -> Dict[str, Any]:

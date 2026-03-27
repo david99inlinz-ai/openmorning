@@ -6,6 +6,7 @@ OpenMorning - 开源预测引擎
 import json
 import os
 import uuid
+import subprocess
 from datetime import datetime
 from typing import Dict, Any, List
 
@@ -53,6 +54,10 @@ class OpenMorning:
         # 解析问题
         parsed = self._parse_question(question)
         context.update(parsed)
+        
+        # 🔥 新增：搜索实时数据
+        market_data = self._fetch_market_data(question, context)
+        context.update(market_data)
         
         # 全量分析（不筛选）
         analysis = {}
@@ -338,6 +343,70 @@ class OpenMorning:
         
         self.cases.setdefault("cases", []).append(case)
         self._save_cases()
+    
+    def _fetch_market_data(self, question: str, context: Dict) -> Dict[str, Any]:
+        """搜索实时市场数据"""
+        try:
+            # 构建搜索查询
+            market = context.get("market", "A股")
+            year = context.get("year", datetime.now().year)
+            
+            queries = [
+                f"{market} {year} 市场情绪 恐惧贪婪指数",
+                f"{market} PMI 库存 经济数据",
+                f"{year} 利率 货币政策"
+            ]
+            
+            # 调用 super-search（通过 subprocess）
+            search_results = []
+            for query in queries[:2]:  # 只搜前2个，省时间
+                try:
+                    result = subprocess.run(
+                        ["node", "../super-search/search.js", query],
+                        capture_output=True,
+                        text=True,
+                        timeout=10,
+                        cwd=os.path.dirname(__file__)
+                    )
+                    if result.returncode == 0:
+                        search_results.append(result.stdout)
+                except:
+                    pass
+            
+            # 解析搜索结果，提取关键数据
+            extracted = self._extract_data_from_search(search_results)
+            return extracted
+            
+        except Exception as e:
+            # 搜索失败不影响主流程
+            return {"search_error": str(e)}
+    
+    def _extract_data_from_search(self, results: List[str]) -> Dict[str, Any]:
+        """从搜索结果提取数据"""
+        data = {}
+        
+        combined = " ".join(results)
+        
+        # 提取恐惧贪婪指数
+        import re
+        fear_match = re.search(r'恐惧.*?(\d{1,2})', combined)
+        if fear_match:
+            data["fear_index"] = int(fear_match.group(1))
+        
+        # 提取利率趋势
+        if "降息" in combined or "宽松" in combined:
+            data["rate_trend"] = "降息"
+        elif "加息" in combined or "紧缩" in combined:
+            data["rate_trend"] = "加息"
+        
+        # 提取 PMI
+        pmi_match = re.search(r'PMI.*?(\d{2}\.\d)', combined)
+        if pmi_match:
+            pmi = float(pmi_match.group(1))
+            data["pmi"] = pmi
+            data["pmi_signal"] = "扩张" if pmi > 50 else "收缩"
+        
+        return data
     
     def _auto_verify_date(self, context: Dict) -> str:
         """自动设置验证日期"""

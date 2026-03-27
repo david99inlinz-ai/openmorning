@@ -16,7 +16,13 @@ class SentimentAgent:
     
     def analyze(self, context: Dict[str, Any]) -> Dict[str, Any]:
         """分析市场情绪"""
-        fear_index = context.get("fear_index", 50)  # 0-100, <25极度恐惧, >75极度贪婪
+        # 优先使用搜索到的数据，否则默认中性
+        fear_index = context.get("fear_index")
+        if fear_index is None:
+            fear_index = 50  # 搜索失败时默认中性
+            data_source = "默认值（搜索失败）"
+        else:
+            data_source = "实时搜索"
         
         # 情绪信号判断
         if fear_index < 25:
@@ -40,7 +46,8 @@ class SentimentAgent:
             "weight": self.weight,
             "analysis": {
                 "fear_index": fear_index,
-                "sentiment": self._get_sentiment_label(fear_index)
+                "sentiment": self._get_sentiment_label(fear_index),
+                "data_source": data_source
             },
             "signal": signal,
             "confidence": abs(fear_index - 50) / 50,  # 偏离中性的程度
