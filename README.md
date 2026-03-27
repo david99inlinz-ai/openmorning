@@ -1,6 +1,8 @@
 # 🌅 OpenMorning - Open Source Prediction Engine
 
-**Making predictions scientific, not guesswork.**
+> **Try it for real. Wait for the results. You'll be amazed.**
+> 
+> **真实使用，等待结果，你会惊掉下巴。**
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Python 3.9+](https://img.shields.io/badge/python-3.9+-blue.svg)](https://www.python.org/downloads/)

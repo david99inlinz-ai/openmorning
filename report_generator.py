@@ -10,6 +10,8 @@ from typing import Dict
 def detect_question_type(question: str) -> str:
     """检测问题类型"""
     q = question.lower()
+    if any(kw in q for kw in ['关系', '紧张', '战争', '冲突', '国际', '外交']):
+        return 'international'
     if any(kw in q for kw in ['选举', '连任', '总统', '特朗普', '政治']):
         return 'political'
     if any(kw in q for kw in ['比特币', 'btc', '加密货币', '币圈']):
@@ -29,7 +31,9 @@ def generate_report(prediction_data: dict) -> tuple:
     result = main_pred.get("result", "")
     probability = main_pred.get("probability", 0)
     
-    if question_type == 'crypto':
+    if question_type == 'international':
+        return _generate_international_report_v2(question, result, probability, prediction_id)
+    elif question_type == 'crypto':
         return _generate_crypto_report_v2(question, result, probability, prediction_id)
     elif question_type == 'political':
         return _generate_political_report_v2(question, result, probability, prediction_id)
@@ -656,6 +660,167 @@ International局势 changes can be key variables.
 ## ⏰ Final Words
 
 **Political prediction is the most complex.**
+
+This report is based on cycle theory, not political judgment.
+
+---
+
+**Report ID**: `{prediction_id}`  
+**Generated**: {datetime.now().strftime('%Y-%m-%d')}
+
+---
+
+*OpenMorning — Making Prediction Scientific*
+"""
+
+    return cn.strip(), en.strip()
+
+def _generate_international_report_v2(question: str, result: str, probability: float, prediction_id: str) -> tuple:
+    """国际关系分析报告 - 营销号风格"""
+    
+    cn = f"""
+# 🌍 OpenMorning 国际形势深度分析
+
+---
+
+## ⚠️ 你正在见证历史
+
+**问题**：{question}
+
+这不是普通的外交周期。
+
+**我们正处于全球地缘政治格局重构的关键节点。**
+
+---
+
+## 🔴 大多数人看不懂的国际逻辑
+
+"国际关系就是利益交换。"
+
+"政治就是政客的游戏。"
+
+**这些人忽略了最关键的因素：周期。**
+
+康波周期决定大国实力对比
+实力对比决定国际格局
+国际格局决定双边关系
+
+**这是跨越百年的历史规律。**
+
+---
+
+## 🔍 深度解读
+
+### 1. 康波周期与大国博弈
+
+历史数据表明：
+
+回升期 → 新兴大国崛起
+萧条期 → 守成大国反击
+
+**这不是预测，这是周期规律。**
+
+### 2. 经济相互依赖的双刃剑
+
+贸易深度绑定 = 冲突成本高
+供应链脱钩 = 冲突风险升
+
+**关键在于脱钩程度。**
+
+### 3. 外部变量的蝴蝶效应
+
+第三方因素可能成为关键变量。
+
+---
+
+## 💡 核心判断
+
+**结论**：存在不确定性  
+**置信度**：{int(probability * 100)}%
+
+---
+
+## ⏰ 最后的话
+
+**国际关系预测极其复杂。**
+
+本报告基于周期理论分析，不构成任何政治判断。
+
+---
+
+**报告编号**：`{prediction_id}`  
+**生成时间**：{datetime.now().strftime('%Y年%m月%d日')}
+
+---
+
+*OpenMorning — 让预测成为科学*
+"""
+
+    en = f"""
+# 🌍 OpenMorning International Relations Analysis
+
+---
+
+## ⚠️ You're Witnessing History
+
+**Question**: {question}
+
+This is not a normal diplomatic cycle.
+
+**We're at a critical inflection point of global geopolitical restructuring.**
+
+---
+
+## 🔴 What Most People Don't Understand
+
+"International relations is just interest exchange."
+
+"Politics is politicians' game."
+
+**They're missing the most critical factor: Cycles.**
+
+Kondratieff cycles determine great power balance
+Power balance determines international格局
+International格局 determines bilateral relations
+
+**This is a century-spanning historical pattern.**
+
+---
+
+## 🔍 Deep Analysis
+
+### 1. Kondratieff Cycles & Great Power Competition
+
+Historical data shows:
+
+Recovery phase → Rising powers emerge
+Depression phase → Established powers push back
+
+**This is not prediction. This is cycle pattern.**
+
+### 2. Economic Interdependence: Double-Edged Sword
+
+Deep trade ties = High conflict cost
+Supply chain decoupling = Rising conflict risk
+
+**The key is decoupling extent.**
+
+### 3. External Butterfly Effects
+
+Third-party factors can be key variables.
+
+---
+
+## 💡 Core Judgment
+
+**Conclusion**: Uncertainty exists  
+**Confidence**: {int(probability * 100)}%
+
+---
+
+## ⏰ Final Words
+
+**International relations prediction is extremely complex.**
 
 This report is based on cycle theory, not political judgment.
 
