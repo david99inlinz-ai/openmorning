@@ -15,17 +15,45 @@ class EconomicCycleAgent:
         self.name = "EconomicCycleAgent"
         self.weight = 0.3  # 默认权重
         
+        # 历史重大事件数据库（区间 + 衰减）
+        self.major_events = [
+            (1997, 1999, {"event": "亚洲金融危机", "signal": "bearish", "decay": [1.0, 0.6, 0.3]}),
+            (2001, 2003, {"event": "加入WTO", "signal": "bullish", "decay": [1.0, 0.7, 0.4]}),
+            (2008, 2010, {"event": "全球金融危机", "signal": "bearish", "decay": [1.0, 0.6, 0.3]}),
+            (2015, 2017, {"event": "股灾+去杠杆", "signal": "bearish", "decay": [1.0, 0.5, 0.2]}),
+            (2020, 2022, {"event": "疫情", "signal": "neutral", "decay": [1.0, 0.6, 0.3]})
+        ]
+        
     def analyze(self, context: Dict[str, Any]) -> Dict[str, Any]:
         """
         分析当前经济周期
         
         Args:
-            context: 包含时间、市场等信息
+            context: 包含时间、市场、问题等信息
             
         Returns:
             周期分析结果
         """
         year = context.get("year", datetime.now().year)
+        question = context.get("question", "")
+        
+        # 检测风险关键词（仅作为标记，不影响信号）
+        risk_keywords = ["危机", "崩盘", "暴跌", "股灾", "泡沫", "次贷", "制裁", "衰退"]
+        risk_flag = any(kw in question for kw in risk_keywords)
+        
+        # 检查历史重大事件（区间 + 衰减）
+        event_signal = None
+        event_desc = ""
+        event_weight = 1.0
+        
+        for start, end, info in self.major_events:
+            if start <= year <= end:
+                year_offset = year - start
+                decay = info["decay"]
+                event_weight = decay[year_offset] if year_offset < len(decay) else decay[-1]
+                event_signal = info["signal"]
+                event_desc = f" [重大事件: {info['event']}, 影响系数: {event_weight:.1f}]"
+                break
         
         # 康波周期分析（50-60年）
         kondratieff = self._analyze_kondratieff(year)
@@ -39,8 +67,8 @@ class EconomicCycleAgent:
         # 货币周期分析
         rate_cycle = self._analyze_rate_cycle(context)
         
-        # 综合信号
-        signal = self._combine_signals(kondratieff, juglar, kitchin, rate_cycle)
+        # 综合信号（考虑历史事件）
+        signal = self._combine_signals(kondratieff, juglar, kitchin, rate_cycle, event_signal, event_weight)
         
         return {
             "agent": self.name,
@@ -53,7 +81,8 @@ class EconomicCycleAgent:
             },
             "signal": signal["direction"],
             "confidence": signal["confidence"],
-            "reasoning": signal["reasoning"]
+            "reasoning": signal["reasoning"] + event_desc,
+            "risk_flag": risk_flag
         }
     
     def _analyze_kondratieff(self, year: int) -> Dict[str, Any]:
@@ -91,25 +120,30 @@ class EconomicCycleAgent:
     
     def _analyze_juglar(self, year: int) -> Dict[str, Any]:
         """朱格拉周期分析（设备投资周期）"""
-        # 中国朱格拉周期约 7-10 年
-        # 2009-2016, 2016-2023, 2023-2030
+        # 定义已知周期区间
+        JUGLAR_CYCLES = [
+            (2009, 2016, ["扩张", "扩张", "扩张", "顶部", "顶部", "收缩", "收缩"]),
+            (2016, 2023, ["扩张", "扩张", "扩张", "顶部", "顶部", "收缩", "收缩"]),
+            (2023, 2030, ["扩张", "扩张", "扩张", "顶部", "顶部", "收缩", "收缩"])
+        ]
         
-        cycle_year = (year - 2009) % 7
+        for start, end, phases in JUGLAR_CYCLES:
+            if start <= year < end:
+                idx = year - start
+                phase = phases[idx] if idx < len(phases) else "收缩"
+                signal = "bullish" if phase == "扩张" else ("neutral" if phase == "顶部" else "bearish")
+                return {
+                    "cycle": "朱格拉周期",
+                    "phase": phase,
+                    "signal": signal,
+                    "period": "7-11年"
+                }
         
-        if cycle_year < 3:
-            phase = "扩张期"
-            signal = "bullish"
-        elif cycle_year < 5:
-            phase = "顶部期"
-            signal = "neutral"
-        else:
-            phase = "收缩期"
-            signal = "bearish"
-            
+        # 超出已知区间
         return {
             "cycle": "朱格拉周期",
-            "phase": phase,
-            "signal": signal,
+            "phase": "unknown",
+            "signal": "neutral",
             "period": "7-11年"
         }
     
@@ -124,9 +158,12 @@ class EconomicCycleAgent:
             signal = "bullish" if pmi > 50 else "bearish"
             data_source = f"PMI {pmi}"
         else:
-            # 降级到简化计算
-            cycle_month = ((year - 2000) * 12) % 40
-            if cycle_month < 20:
+            # 使用月份精度计算
+            month = context.get("month", 1)
+            total_months = (year - 2020) * 12 + month
+            cycle_months = total_months % 40  # 40个月周期
+            
+            if cycle_months < 20:
                 phase = "补库存"
                 signal = "bullish"
             else:
@@ -164,7 +201,7 @@ class EconomicCycleAgent:
             "description": description
         }
     
-    def _combine_signals(self, kondratieff, juglar, kitchin, rate_cycle) -> Dict[str, Any]:
+    def _combine_signals(self, kondratieff, juglar, kitchin, rate_cycle, event_signal=None, event_weight=1.0) -> Dict[str, Any]:
         """综合多周期信号"""
         signals = [
             (kondratieff["signal"], 0.4),  # 康波权重最高
@@ -176,12 +213,24 @@ class EconomicCycleAgent:
         bullish_score = sum(w for s, w in signals if s == "bullish")
         bearish_score = sum(w for s, w in signals if s == "bearish")
         
-        if bullish_score > bearish_score + 0.2:
-            direction = "bullish"
-            confidence = bullish_score
-        elif bearish_score > bullish_score + 0.2:
-            direction = "bearish"
-            confidence = bearish_score
+        # 历史事件影响（对称处理 + 衰减权重）
+        if event_signal == "bearish":
+            bearish_score *= (1.0 + event_weight)
+        elif event_signal == "bullish":
+            bullish_score *= (1.0 + event_weight)
+        
+        # 归一化 confidence 到 0-1
+        total = bullish_score + bearish_score
+        if total > 0:
+            if bullish_score > bearish_score + 0.2:
+                direction = "bullish"
+                confidence = bullish_score / total
+            elif bearish_score > bullish_score + 0.2:
+                direction = "bearish"
+                confidence = bearish_score / total
+            else:
+                direction = "neutral"
+                confidence = 0.5
         else:
             direction = "neutral"
             confidence = 0.5

@@ -98,7 +98,10 @@ class OpenMorning:
         # 生成专业投资报告（中英双语）
         cn_report, en_report = generate_report(record)
         
-        return {"report_cn": cn_report, "report_en": en_report, "prediction_id": prediction_id, "raw_data": record}
+        # 生成 PDF 并保存
+        pdf_path = self._generate_and_save_pdf(cn_report, prediction_id)
+        
+        return {"report_cn": cn_report, "report_en": en_report, "prediction_id": prediction_id, "pdf_path": pdf_path, "raw_data": record}
     
     def verify(self, prediction_id: str, actual_result: str) -> Dict[str, Any]:
         """
@@ -139,7 +142,7 @@ class OpenMorning:
         self._add_to_cases(record, actual_result, lessons)
         
         # 更新 Agent 权重
-        self._update_agent_weights(verification)
+        self._update_agent_weights(record, verification)
         
         return {
             "prediction_id": prediction_id,
@@ -149,73 +152,101 @@ class OpenMorning:
     
     def _parse_question(self, question: str) -> Dict[str, Any]:
         """解析问题，提取关键信息"""
+        import re
+        
         result = {
             "question": question,
             "year": datetime.now().year,
-            "market": "A 股"
+            "market": "A股",
+            "expectation": "unknown"  # 默认值
         }
         
-        # 提取年份
-        import re
-        year_match = re.search(r'(20\d{2})', question)
-        if year_match:
-            result["year"] = int(year_match.group(1))
+        # 提取年份（取最大值）
+        year_matches = re.findall(r'(20\d{2})', question)
+        if year_matches:
+            result["year"] = max(int(y) for y in year_matches)
         
-        # 提取市场
-        if "比特币" in question or "BTC" in question:
-            result["market"] = "crypto"
-        elif "美股" in question:
-            result["market"] = "US"
-        elif "A 股" in question:
-            result["market"] = "A 股"
+        # 提取市场（支持无空格）
+        market_map = {
+            "比特币": "crypto", "BTC": "crypto", "crypto": "crypto",
+            "美股": "US", "纳斯达克": "US", "标普": "US",
+            "A股": "A股", "A 股": "A股", "沪深": "A股",
+            "港股": "港股", "恒生": "港股"
+        }
+        for keyword, market_type in market_map.items():
+            if keyword in question:
+                result["market"] = market_type
+                break
         
-        # 判断问题类型
-        if "涨" in question or "上涨" in question:
+        # 判断问题类型（避免误匹配）
+        if re.search(r'(?<!不)(?<!会)涨(?!跌)', question) or "上涨" in question:
             result["expectation"] = "bullish"
-        elif "跌" in question or "下跌" in question:
+        elif re.search(r'(?<!不)(?<!会)跌(?!涨)', question) or "下跌" in question:
             result["expectation"] = "bearish"
+        elif "震荡" in question or "横盘" in question:
+            result["expectation"] = "neutral"
         
         return result
     
     def _generate_predictions(self, analysis: Dict, context: Dict) -> List[Dict]:
-        """生成多方案预测"""
-        # 综合所有 Agent 的信号
-        bullish_score = 0
-        bearish_score = 0
+        """生成多方案预测（数据驱动）"""
+        # 市场波动率配置
+        VOLATILITY = {
+            "A股": (15, 35),
+            "crypto": (40, 100),
+            "US": (10, 25),
+            "港股": (20, 40)
+        }
+        
+        # 综合所有 Agent 的信号（加入置信度）
+        weighted_score = 0
+        total_weight = 0
         
         for agent_name, result in analysis.items():
             if "error" in result:
                 continue
             
             weight = result.get("weight", 0.2)
+            confidence = result.get("confidence", 0.5)
             signal = result.get("signal", "neutral")
             
-            if signal == "bullish":
-                bullish_score += weight
-            elif signal == "bearish":
-                bearish_score += weight
+            signal_value = {"bullish": 1, "bearish": -1, "neutral": 0}.get(signal, 0)
+            weighted_score += weight * confidence * signal_value
+            total_weight += weight
         
-        # 生成三个方案
-        if bullish_score > bearish_score + 0.2:
-            # 乐观方案概率高
+        # 归一化到 [-1, 1]
+        normalized = weighted_score / max(total_weight, 0.01)
+        
+        # 获取市场波动率
+        market = context.get("market", "A股")
+        vol_range = VOLATILITY.get(market, (15, 35))
+        
+        # 根据信号强度动态生成概率和幅度
+        if normalized > 0.15:  # 偏多
+            bullish_prob = 0.3 + normalized * 0.3  # [0.35, 0.6]
+            neutral_prob = 0.4 - normalized * 0.2
+            bearish_prob = 1 - bullish_prob - neutral_prob
+            
             predictions = [
-                {"scenario": "乐观", "result": "上涨 50-70%", "probability": 0.5},
-                {"scenario": "中性", "result": "上涨 20-40%", "probability": 0.3},
-                {"scenario": "悲观", "result": "下跌 10-20%", "probability": 0.2}
+                {"scenario": "乐观", "result": f"上涨 {vol_range[1]-10}-{vol_range[1]}%", "probability": round(bullish_prob, 2)},
+                {"scenario": "中性", "result": f"上涨 {vol_range[0]}-{vol_range[0]+10}%", "probability": round(neutral_prob, 2)},
+                {"scenario": "悲观", "result": f"下跌 {vol_range[0]//2}-{vol_range[0]}%", "probability": round(bearish_prob, 2)}
             ]
-        elif bearish_score > bullish_score + 0.2:
-            # 悲观方案概率高
+        elif normalized < -0.15:  # 偏空
+            bearish_prob = 0.3 + abs(normalized) * 0.3
+            neutral_prob = 0.4 - abs(normalized) * 0.2
+            bullish_prob = 1 - bearish_prob - neutral_prob
+            
             predictions = [
-                {"scenario": "乐观", "result": "上涨 10-20%", "probability": 0.2},
-                {"scenario": "中性", "result": "下跌 20-40%", "probability": 0.3},
-                {"scenario": "悲观", "result": "下跌 50-70%", "probability": 0.5}
+                {"scenario": "乐观", "result": f"上涨 {vol_range[0]//2}-{vol_range[0]}%", "probability": round(bullish_prob, 2)},
+                {"scenario": "中性", "result": f"下跌 {vol_range[0]}-{vol_range[0]+10}%", "probability": round(neutral_prob, 2)},
+                {"scenario": "悲观", "result": f"下跌 {vol_range[1]-10}-{vol_range[1]}%", "probability": round(bearish_prob, 2)}
             ]
-        else:
-            # 中性
+        else:  # 中性
             predictions = [
-                {"scenario": "乐观", "result": "上涨 20-40%", "probability": 0.3},
+                {"scenario": "乐观", "result": f"上涨 {vol_range[0]}-{vol_range[0]+10}%", "probability": 0.3},
                 {"scenario": "中性", "result": "横盘震荡", "probability": 0.4},
-                {"scenario": "悲观", "result": "下跌 20-40%", "probability": 0.3}
+                {"scenario": "悲观", "result": f"下跌 {vol_range[0]}-{vol_range[0]+10}%", "probability": 0.3}
             ]
         
         # 添加关键因素
@@ -232,20 +263,34 @@ class OpenMorning:
         return predictions
     
     def _find_similar_cases(self, context: Dict) -> List[Dict]:
-        """查找相似历史案例"""
-        similar = []
+        """查找相似历史案例（多维度评分）"""
+        scored = []
         
         for case in self.cases.get("cases", []):
-            # 简单匹配：康波周期阶段相同
             case_context = case.get("context", {})
+            score = 0
+            
+            # 多维度匹配
             if case_context.get("kondratieff") == context.get("kondratieff_phase"):
-                similar.append({
+                score += 3  # 康波权重高
+            if case_context.get("juglar") == context.get("juglar_phase"):
+                score += 2
+            if case_context.get("rate_cycle") == context.get("rate_cycle"):
+                score += 1
+            if case_context.get("sentiment") == context.get("sentiment"):
+                score += 1
+            
+            if score > 0:
+                scored.append((score, {
                     "year": case["time"],
                     "context": case_context,
-                    "result": case["result"]
-                })
+                    "result": case["result"],
+                    "similarity_score": score
+                }))
         
-        return similar[:3]  # 返回最多 3 个
+        # 按相似度排序
+        scored.sort(key=lambda x: -x[0])
+        return [c for _, c in scored[:3]]
     
     def _analyze_verification(self, record: Dict, actual_result: str) -> Dict:
         """分析验证结果"""
@@ -253,18 +298,21 @@ class OpenMorning:
         import re
         
         direction = "neutral"
-        amplitude = 0
+        amplitude = 0.0  # 初始化默认值
         
-        if "涨" in actual_result or "上涨" in actual_result:
+        # 修复正则表达式，支持小数
+        pattern_up = r'(?:涨了?|上涨|涨幅)[约近]?(\d+(?:\.\d+)?)%?'
+        pattern_down = r'(?:跌了?|下跌|跌幅)[约近]?(\d+(?:\.\d+)?)%?'
+        
+        match = re.search(pattern_up, actual_result)
+        if match:
             direction = "bullish"
-            match = re.search(r'涨 (?:了 | 幅)?(\d+)%?', actual_result)
+            amplitude = float(match.group(1))
+        else:
+            match = re.search(pattern_down, actual_result)
             if match:
-                amplitude = int(match.group(1))
-        elif "跌" in actual_result or "下跌" in actual_result:
-            direction = "bearish"
-            match = re.search(r'跌 (?:了 | 幅)?(\d+)%?', actual_result)
-            if match:
-                amplitude = -int(match.group(1))
+                direction = "bearish"
+                amplitude = -float(match.group(1))
         
         # 对比预测
         predictions = record.get("predictions", [])
@@ -305,61 +353,84 @@ class OpenMorning:
         analysis = record.get("analysis", {})
         for agent_name, result in analysis.items():
             if "error" in result:
+                lessons["what_went_wrong"].append(f"{agent_name} 执行出错: {result['error']}")
+                lessons["improvements"].append(f"修复 {agent_name} 的错误处理")
                 continue
             
             signal = result.get("signal", "neutral")
             if signal == verification.get("direction"):
                 lessons["what_went_right"].append(f"{agent_name} 判断正确")
-            else:
+            elif signal != "neutral":
                 lessons["what_went_wrong"].append(f"{agent_name} 判断错误")
+                lessons["improvements"].append(f"优化 {agent_name} 的信号生成逻辑")
         
         return lessons
     
-    def _update_agent_weights(self, verification: Dict):
-        """更新 Agent 权重（精细化调整）"""
+    def _update_agent_weights(self, record: Dict, verification: Dict):
+        """更新 Agent 权重（精细化调整 + 归一化）"""
         actual_direction = verification.get("direction", "neutral")
         
-        # 从最近的预测记录中获取各 Agent 的信号
-        latest_pred = self.predictions["predictions"][-1]
-        analysis = latest_pred.get("analysis", {})
+        # 从当前验证的预测记录中获取各 Agent 的信号
+        analysis = record.get("analysis", {})
         
         # 逐个评估 Agent 的准确性
         for agent_name, agent in self.agents.items():
             agent_result = analysis.get(agent_name, {})
             agent_signal = agent_result.get("signal", "neutral")
             
+            old_weight = agent.weight
+            
             # 判断该 Agent 是否预测正确
             if agent_signal == actual_direction:
                 # 预测对了 → 增加权重
                 agent.weight = min(0.5, agent.weight + 0.02)
-                print(f"✅ {agent_name} 预测正确，权重 {agent.weight-0.02:.2f} → {agent.weight:.2f}")
+                print(f"✅ {agent_name} 预测正确，权重 {old_weight:.3f} → {agent.weight:.3f}")
             elif agent_signal != "neutral" and actual_direction != "neutral":
                 # 预测错了（且不是中性）→ 减少权重
                 agent.weight = max(0.05, agent.weight - 0.02)
-                print(f"❌ {agent_name} 预测错误，权重 {agent.weight+0.02:.2f} → {agent.weight:.2f}")
+                print(f"❌ {agent_name} 预测错误，权重 {old_weight:.3f} → {agent.weight:.3f}")
             else:
-                # 中性或方向不明确 → 小幅调整
-                agent.weight = max(0.05, min(0.5, agent.weight - 0.005))
-                print(f"⚖️ {agent_name} 中性，权重微调 → {agent.weight:.2f}")
+                # 中性或方向不明确 → 不惩罚
+                print(f"⚖️ {agent_name} 中性，权重保持 {agent.weight:.3f}")
+        
+        # 归一化权重
+        total = sum(a.weight for a in self.agents.values())
+        if total > 0:
+            for agent in self.agents.values():
+                agent.weight = round(agent.weight / total, 4)
         
         # 保存权重到文件
         self._save_agent_weights()
     
     def _add_to_cases(self, record: Dict, actual_result: str, lessons: Dict):
         """添加到历史案例库"""
+        # 从 record 中提取真实的 context
+        analysis = record.get("analysis", {})
+        
+        # 提取各周期的实际阶段
+        context = {}
+        if "economic_cycle" in analysis:
+            ec_analysis = analysis["economic_cycle"].get("analysis", {})
+            context["kondratieff"] = ec_analysis.get("kondratieff", {}).get("phase", "unknown")
+            context["juglar"] = ec_analysis.get("juglar", {}).get("phase", "unknown")
+            context["rate_cycle"] = ec_analysis.get("rate_cycle", {}).get("trend", "unknown")
+        
+        if "sentiment" in analysis:
+            context["sentiment"] = analysis["sentiment"].get("label", "unknown")
+        
+        # 提取主要预测（最高概率）
+        predictions = record.get("predictions", [])
+        main_prediction = max(predictions, key=lambda p: p.get("probability", 0)) if predictions else {}
+        
         case = {
             "id": record["id"],
-            "time": datetime.now().year,
+            "time": datetime.now().isoformat(),  # 完整时间
             "question": record["question"],
-            "context": {
-                "kondratieff": "回升期",  # 简化
-                "juglar": "扩张期",
-                "rate_cycle": "降息"
-            },
-            "prediction": record["predictions"][0]["result"],
+            "context": context,
+            "prediction": main_prediction.get("result", "unknown"),
             "result": actual_result,
             "analysis": lessons.get("what_went_right", []) + lessons.get("what_went_wrong", []),
-            "lessons": str(lessons)
+            "lessons": lessons  # 直接存字典
         }
         
         self.cases.setdefault("cases", []).append(case)
@@ -386,13 +457,14 @@ class OpenMorning:
                         ["node", "../super-search/search.js", query],
                         capture_output=True,
                         text=True,
-                        timeout=10,
-                        cwd=os.path.dirname(__file__)
+                        timeout=15,
+                        cwd=os.path.dirname(__file__) or "."
                     )
                     if result.returncode == 0:
                         search_results.append(result.stdout)
-                except:
-                    pass
+                except (subprocess.TimeoutExpired, FileNotFoundError) as e:
+                    print(f"⚠️ 搜索失败 [{query}]: {e}")
+                    continue
             
             # 解析搜索结果，提取关键数据
             extracted = self._extract_data_from_search(search_results)
@@ -485,11 +557,59 @@ class OpenMorning:
         """保存历史案例"""
         with open(self.cases_file, "w", encoding="utf-8") as f:
             json.dump(self.cases, f, ensure_ascii=False, indent=2)
+    
+    def _generate_and_save_pdf(self, report_content: str, prediction_id: str) -> str:
+        """生成 PDF 并保存到 workspace"""
+        workspace_dir = "/home/ubuntu/.openclaw/workspace"
+        reports_dir = os.path.join(workspace_dir, "openmorning_reports")
+        os.makedirs(reports_dir, exist_ok=True)
+        
+        pdf_filename = f"{prediction_id}.pdf"
+        pdf_path = os.path.join(reports_dir, pdf_filename)
+        md_path = pdf_path.replace('.pdf', '.md')
+        
+        # 保存 markdown
+        with open(md_path, 'w', encoding='utf-8') as f:
+            f.write(report_content)
+        
+        # 生成 PDF
+        try:
+            result = subprocess.run(
+                ['pandoc', md_path, '-o', pdf_path, '--pdf-engine=xelatex',
+                 '-V', 'CJKmainfont=Noto Sans CJK SC', '-V', 'geometry:margin=1in'],
+                capture_output=True, text=True, timeout=60
+            )
+            if result.returncode == 0 and os.path.exists(pdf_path):
+                return pdf_path
+            else:
+                print(f"PDF 生成失败：{result.stderr[:200]}")
+                return md_path
+        except Exception as e:
+            print(f"pandoc 调用失败：{e}")
+            return md_path
 
 
 if __name__ == "__main__":
+    import sys
+    
     om = OpenMorning()
     
-    # 测试预测
-    result = om.predict("2026 年 A 股会涨吗？", {"rate_trend": "降息"})
-    print(json.dumps(result, indent=2, ensure_ascii=False))
+    if len(sys.argv) > 2 and sys.argv[1] == "predict":
+        question = " ".join(sys.argv[2:])
+        result = om.predict(question)
+        
+        # 输出结果（飞书会自动捕获）
+        pdf_path = result.get("pdf_path")
+        prediction_id = result.get("prediction_id")
+        
+        if pdf_path and os.path.exists(pdf_path):
+            print(f"📊 OpenMorning 投资研究报告")
+            print(f"**预测 ID**: {prediction_id}")
+            print(f"**文件**: {pdf_path}")
+            print(f"\n{result.get('report_cn', '')[:1500]}")
+        else:
+            print(json.dumps(result, indent=2, ensure_ascii=False))
+    else:
+        # 测试预测
+        result = om.predict("2026 年 A 股会涨吗？", {"rate_trend": "降息"})
+        print(json.dumps(result, indent=2, ensure_ascii=False))
